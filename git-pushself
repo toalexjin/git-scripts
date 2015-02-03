@@ -1,0 +1,77 @@
+#!/bin/bash
+
+usage() {
+	echo "NAME"
+	echo "	git-pushself: Push current branch to remote repository"
+	echo ""
+	echo "SYNOPSIS"
+	echo "	git pushself [-f | --force] [-v | --verbose] [repository]"
+	echo "	git pushself -help"
+	echo ""
+	echo "OPTIONS"
+	echo "	-f, --force"
+	echo "		Do a force push."
+	echo ""
+	echo "	-v, --verbose"
+	echo "		Verbose mode."
+	echo ""
+	echo "	repository"
+	echo "		The remote repository name. It's 'origin' by default."
+	echo ""
+
+	exit 1
+}
+
+if [[ $# -eq 1 ]] && [[ "$1" = "help" || "$1" = "-help" ]]
+then
+	usage
+fi
+
+
+force=""
+verbose=""
+repo=""
+pattern='(^[a-zA-Z0-9_]+[a-zA-Z0-9_\.\+\-]*$)'
+
+for ii in $*
+do
+	if [ "$ii" = "-f" -o "$ii" = "--force" ]
+	then
+		if [ -z "$force" ]
+		then
+			force="-f"
+		else
+			usage
+		fi
+	elif [ "$ii" = "-v" -o "$ii" = "--verbose" ]
+	then
+		if [ -z "$verbose" ]
+		then
+			verbose="-v"
+		else
+			usage
+		fi
+	elif [[ "$ii" =~ ($pattern) ]]
+	then
+		if [ -z "$repo" ]
+		then
+			repo="$ii"
+		else
+			usage
+		fi
+	else
+		usage
+	fi
+done
+
+if [ -z "$repo" ]
+then
+	repo=origin
+fi
+
+
+bname=$(git branch --no-color | awk '{if (NF==2 && $1=="*") print $2}')
+
+git push $force $verbose $repo $bname
+
+
