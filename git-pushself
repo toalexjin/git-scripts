@@ -6,7 +6,7 @@ usage() {
 	echo ""
 	echo "SYNOPSIS"
 	echo "	git pushself [-f | --force] [-v | --verbose] [repository]"
-	echo "	git pushself -help"
+	echo "	git pushself <-h>"
 	echo ""
 	echo "OPTIONS"
 	echo "	-f, --force"
@@ -16,13 +16,16 @@ usage() {
 	echo "		Verbose mode."
 	echo ""
 	echo "	repository"
-	echo "		The remote repository name. It's 'origin' by default."
+	echo "		Remote repository name. It's 'origin' by default."
+	echo ""
+	echo "	-h"
+	echo "		Print help."
 	echo ""
 
 	exit 1
 }
 
-if [[ $# -eq 1 ]] && [[ "$1" = "help" || "$1" = "-help" ]]
+if [[ $# -eq 1 ]] && [[ "$1" = "-h" || "$1" = "help" || "$1" = "-help" ]]
 then
 	usage
 fi
