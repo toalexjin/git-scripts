@@ -72,6 +72,13 @@ then
 	repo=origin
 fi
 
+# Check if it's in a git repository.
+if ! git branch > /dev/null 2>&1
+then
+	echo "You are NOT in a git repository."
+	echo ""
+	exit 1
+fi
 
 bname=$(git branch --no-color | awk '{if (NF==2 && $1=="*") print $2}')
 
