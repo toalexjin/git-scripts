@@ -5,18 +5,25 @@ usage() {
 	echo "	git-pushself: Push current branch to remote repository"
 	echo ""
 	echo "SYNOPSIS"
-	echo "	git pushself [-f | --force] [-v | --verbose] [repository]"
+	echo "	git pushself [<repository> | -a | --all] [-n <remote-branch> | --name <remote-branch>]"
+	echo "			[-f | --force] [-v | --verbose]"
 	echo "	git pushself <-h>"
 	echo ""
 	echo "OPTIONS"
+	echo "	repository"
+	echo "		Remote repository name. It's 'origin' by default."
+	echo ""
+	echo "	-a, --all"
+	echo "		Push current branch to all repositories."
+	echo ""
+	echo "	-n, --name"
+	echo "		Remote branch name, could be different from current branch name."
+	echo ""
 	echo "	-f, --force"
 	echo "		Do a force push."
 	echo ""
 	echo "	-v, --verbose"
 	echo "		Verbose mode."
-	echo ""
-	echo "	repository"
-	echo "		Remote repository name. It's 'origin' by default."
 	echo ""
 	echo "	-h"
 	echo "		Print help."
@@ -25,52 +32,77 @@ usage() {
 	exit 1
 }
 
-if [[ $# -eq 1 ]] && [[ "$1" = "-h" || "$1" = "help" || "$1" = "-help" ]]
+args=`getopt -o "n:afvh" -l "name:,all,force,verbose" -n "git-pushself" -- "$@"`
+if (($? != 0))
 then
+	echo ""
 	usage
 fi
 
+eval set -- "$args"
 
-force=""
-verbose=""
-repo=""
-pattern='(^[a-zA-Z0-9_]+[a-zA-Z0-9_\.\+\-]*$)'
+options=""
+all="no"
+remotename=""
 
-for ii in $*
-do
-	if [ "$ii" = "-f" -o "$ii" = "--force" ]
-	then
-		if [ -z "$force" ]
-		then
-			force="-f"
-		else
+while true; do
+	case "$1" in
+		-n|--name)
+			remotename="$2"
+			shift 2
+			;;
+
+		-a|--all)
+			all="yes"
+			shift
+			;;
+
+		-f|--force)
+			options="$options -f"
+			shift
+			;;
+
+		-v|--verbose)
+			options="$options -v"
+			shift
+			;;
+
+		-h)
 			usage
-		fi
-	elif [ "$ii" = "-v" -o "$ii" = "--verbose" ]
-	then
-		if [ -z "$verbose" ]
-		then
-			verbose="-v"
-		else
+			;;
+
+		--)
+			shift
+			break
+			;;
+
+		*)
+			echo "$1 is not an option!"
+			echo ""
 			usage
-		fi
-	elif [[ "$ii" =~ ($pattern) ]]
-	then
-		if [ -z "$repo" ]
-		then
-			repo="$ii"
-		else
-			usage
-		fi
-	else
-		usage
-	fi
+			;;
+	esac
 done
 
-if [ -z "$repo" ]
+# Repository name
+if (($# == 0))
 then
-	repo=origin
+	if [ "$all" != "yes" ]
+	then
+		repo="origin"
+	fi
+elif (($# == 1))
+then
+	if [ "$all" = "yes" ]
+	then
+		usage
+	fi
+
+	repo="$1"
+else
+	usage
 fi
+
 
 # Check if it's in a git repository.
 if ! git branch > /dev/null 2>&1
@@ -80,8 +112,29 @@ then
 	exit 1
 fi
 
-bname=$(git branch --no-color | awk '{if (NF==2 && $1=="*") print $2}')
+if [ -z "$remotename" ]
+then
+	remotename=$(git branch --no-color | awk '{if (NF==2 && $1=="*") print $2}')
+fi
 
-git push $force $verbose $repo $bname
+if [ "$all" = "yes" ]
+then
+	for ii in `git remote`
+	do
+		cmds[${#cmds[@]}]="git push$options $ii HEAD:$remotename"
+	done
+else
+	cmds[0]="git push$options $repo HEAD:$remotename"
+fi
+
+
+for ((ii=0;ii<${#cmds[@]};ii++))
+do
+	echo ">> ${cmds[$ii]}"
+	if [[ "${DEBUG,,}" != "yes" && "${DEBUG,,}" != "y" ]]
+	then
+		eval "${cmds[$ii]}"
+	fi
+done
 
 
