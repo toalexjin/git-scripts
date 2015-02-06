@@ -1,0 +1,171 @@
+#!/bin/bash
+
+usage() {
+	echo "NAME"
+	echo "	git-sync: Synchronize two remote repositories"
+	echo ""
+	echo "SYNOPSIS"
+	echo "	git sync [--no-ff] [-m <msg>] <branch> [<primary> <secondary>]"
+	echo "	git sync <-h>"
+	echo ""
+	echo "DESCRIPTION"
+	echo "	Synchronize two repositories by merging <primary>/<branch> with <secondary>/<branch>."
+	echo "	If both <primary> and <secondary> are not specified, then current remote repositories will be used."
+	echo "	If number of remote repositories is not 2, then error message will be shown."
+	echo ""
+	echo "OPTIONS"
+	echo "	--no-ff"
+	echo "		Create a merge commit even when the merge resolves as a fast-forward."
+	echo ""
+	echo "	-m <msg>"
+	echo "		Merge commit message. If it's not specified, then default message will be used."
+	echo ""
+	echo "	<branch>"
+	echo "		Remote branch name."
+	echo ""
+	echo "	<primary>"
+	echo "		Primary repository name."
+	echo ""
+	echo "	<Secondary>"
+	echo "		Secondary repository name."
+	echo ""
+	echo "	-h"
+	echo "		Print help."
+	echo ""
+
+	exit 1
+}
+
+args=`getopt -o "m:h" -l "no-ff" -n "git sync" -- "$@"`
+if (($? != 0))
+then
+	echo ""
+	usage
+fi
+
+eval set -- "$args"
+
+msg=""
+ff=" --ff"
+msg=""
+
+while true; do
+	case "$1" in
+		-m)
+			msg="${2//\'/\"}"
+			shift 2
+			;;
+
+		--no-ff)
+			ff=" --no-ff"
+			shift
+			;;
+
+		-h)
+			usage
+			;;
+
+		--)
+			shift
+			break
+			;;
+
+		*)
+			echo "$1 is not an option!"
+			echo ""
+			usage
+			;;
+	esac
+done
+
+# Check if it's in a git repository.
+if ! git branch > /dev/null 2>&1
+then
+	echo "You are not in a git repository."
+	exit 1
+fi
+
+if (($# == 1))
+then
+	branch="$1"
+	remotes=(`git remote`)
+
+	if ((${#remotes[@]} != 2))
+	then
+		echo "Number of remote repositories is not 2 (see output of 'git remote')."
+		exit 1
+	fi
+
+	if [ "${remotes[0]}" = "origin" ]
+	then
+		primary="${remotes[0]}"
+		secondary="${remotes[1]}"
+	else
+		primary="${remotes[1]}"
+		secondary="${remotes[0]}"
+	fi
+elif (($# == 3))
+then
+	branch="$1"
+	primary="$2"
+	secondary="$3"
+else
+	usage
+fi
+
+# Check if any of them is empty string.
+if [[ -z "$branch" || -z "$primary" || -z "$secondary" ]]
+then
+	echo "<branch>, <primary> and <secondary> could not be empty string."
+	exit 1
+fi
+
+if [ -z "$msg" ]
+then
+	msg="Merge branch secondary/$branch into primary/$branch"
+fi
+
+# Check if current branch has uncommitted changed files.
+if ((`git status -s | wc -l` != 0))
+then
+	echo "Your current branch has uncommitted changed files. Please rollback or commit them first."
+	exit 1
+fi
+
+old=$(git branch --no-color | awk '{if (NF==2 && $1=="*") print $2}')
+
+# Generate a list of commands
+
+# Accessing the seconary repository is always slow,
+# so we fetch & update secondary repository first.
+cmds=()
+cmds+=("git fetch $secondary $branch")
+cmds+=("git fetch $primary $branch")
+cmds+=("git branch -f --no-track sync $primary/$branch")
+cmds+=("git checkout sync")
+cmds+=("git merge$ff -m '$msg' $secondary/$branch")
+cmds+=("git push $secondary HEAD:$branch")
+cmds+=("git push $primary HEAD:$branch")
+cmds+=("git checkout $old")
+cmds+=("git branch -D sync")
+
+
+# Run commands
+for ((ii=0;ii<${#cmds[@]};ii++))
+do
+	echo ">> ${cmds[$ii]}"
+
+	if [[ "${DEBUG,,}" != "yes" && "${DEBUG,,}" != "y" ]]
+	then
+		eval "${cmds[$ii]}"
+
+		if (($? != 0))
+		then
+			exit 1
+		fi	
+
+		echo ""
+	fi
+done
+
+

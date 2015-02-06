@@ -10,13 +10,13 @@ usage() {
 	echo "	git pushself <-h>"
 	echo ""
 	echo "OPTIONS"
-	echo "	repository"
+	echo "	<repository>"
 	echo "		Remote repository name. It's 'origin' by default."
 	echo ""
 	echo "	-a, --all"
 	echo "		Push current branch to all repositories."
 	echo ""
-	echo "	-n, --name"
+	echo "	-n <remote-branch>, --name <remote-branch>"
 	echo "		Remote branch name, could be different from current branch name."
 	echo ""
 	echo "	-f, --force"
@@ -32,7 +32,7 @@ usage() {
 	exit 1
 }
 
-args=`getopt -o "n:afvh" -l "name:,all,force,verbose" -n "git-pushself" -- "$@"`
+args=`getopt -o "n:afvh" -l "name:,all,force,verbose" -n "git pushself" -- "$@"`
 if (($? != 0))
 then
 	echo ""
@@ -49,6 +49,11 @@ while true; do
 	case "$1" in
 		-n|--name)
 			remotename="$2"
+			if [ -z "$remotename" ]
+			then
+				echo "Remote branch name could not be empty string."
+				exit 1
+			fi
 			shift 2
 			;;
 
@@ -58,12 +63,12 @@ while true; do
 			;;
 
 		-f|--force)
-			options="$options -f"
+			options+=" -f"
 			shift
 			;;
 
 		-v|--verbose)
-			options="$options -v"
+			options+=" -v"
 			shift
 			;;
 
@@ -84,6 +89,13 @@ while true; do
 	esac
 done
 
+# Check if it's in a git repository.
+if ! git branch > /dev/null 2>&1
+then
+	echo "You are not in a git repository."
+	exit 1
+fi
+
 # Repository name
 if (($# == 0))
 then
@@ -99,41 +111,41 @@ then
 	fi
 
 	repo="$1"
+	if [ -z "$repo" ]
+	then
+		echo "Repository name could not be empty string."
+		exit 1
+	fi
 else
 	usage
 fi
 
-
-# Check if it's in a git repository.
-if ! git branch > /dev/null 2>&1
-then
-	echo "You are NOT in a git repository."
-	echo ""
-	exit 1
-fi
 
 if [ -z "$remotename" ]
 then
 	remotename=$(git branch --no-color | awk '{if (NF==2 && $1=="*") print $2}')
 fi
 
+cmds=()
 if [ "$all" = "yes" ]
 then
 	for ii in `git remote`
 	do
-		cmds[${#cmds[@]}]="git push$options $ii HEAD:$remotename"
+		cmds+=("git push$options $ii HEAD:$remotename")
 	done
 else
-	cmds[0]="git push$options $repo HEAD:$remotename"
+	cmds+=("git push$options $repo HEAD:$remotename")
 fi
 
 
 for ((ii=0;ii<${#cmds[@]};ii++))
 do
 	echo ">> ${cmds[$ii]}"
+
 	if [[ "${DEBUG,,}" != "yes" && "${DEBUG,,}" != "y" ]]
 	then
 		eval "${cmds[$ii]}"
+		echo ""
 	fi
 done
 
