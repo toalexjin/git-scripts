@@ -1,8 +1,7 @@
 git-sync(1)
 ===========
 :doctype: manpage
-:man manual: Git Scripts Manual
-:page-layout: base
+:man manual: Git Manual
 
 NAME
 ----
@@ -11,21 +10,22 @@ git-sync - Synchronize two remote branches
 SYNOPSIS
 --------
 [verse]
-'git sync' [--no-ff] [-m <msg>] <branch> [<primary> <secondary>]
+*git sync* [--no-ff] [-m <msg>] <branch> [<primary> <secondary>]
+*git sync* [--no-ff] [-m <msg>] <primary/branch> <secondary/branch>
 
 DESCRIPTION
 -----------
-Synchronize two remote branches by merging them. If both <primary>
-and <secondary> are not specified, then current remote repositories
-will be used. If number of remote repositories is not 2, then error
-message will be shown.
+Synchronize two remote branches by merging them and pushing back
+to remote. If both <primary> and <secondary> are not specified,
+then current remote repositories will be used. If number of remote
+repositories is not 2, then error message will be shown.
 
 OPTIONS
 -------
---no-ff::
+*--no-ff*::
 	Create a merge commit even when the merge resolves as a fast-forward.
 
--m <msg>::
+*-m* <msg>::
 	Merge commit message. If it's not specified, then default message will be used.
 
 <branch>::
@@ -37,14 +37,32 @@ OPTIONS
 <secondary>::
 	Secondary repository name.
 
+<primary/branch>::
+	Primary repository name and branch name.
+
+<secondary/branch>::
+	Secondary repository name and branch name.
+
+EXIT STATUS
+-----------
+*0*::
+	Success
+
+*Not Zero*::
+	Failure
+
 EXAMPLES
 --------
 
 -----------------
 $ git sync master
 $ git sync master origin usa
-$ git sync origin/develop usa/develop
+$ git sync gitlab/master github/mirror
 -----------------
+
+SEE ALSO
+--------
+*git-merge*[1]
 
 AUTHOR
 ------
