@@ -1,37 +1,10 @@
 #!/bin/bash
 
-usage() {
-	echo "NAME"
-	echo "	git-sync: Synchronize two remote repositories"
-	echo ""
-	echo "SYNOPSIS"
-	echo "	git sync [--no-ff] [-m <msg>] <branch> [<primary> <secondary>]"
-	echo "	git sync <-h>"
-	echo ""
-	echo "DESCRIPTION"
-	echo "	Synchronize two repositories by merging <primary>/<branch> with <secondary>/<branch>."
-	echo "	If both <primary> and <secondary> are not specified, then current remote repositories will be used."
-	echo "	If number of remote repositories is not 2, then error message will be shown."
-	echo ""
-	echo "OPTIONS"
-	echo "	--no-ff"
-	echo "		Create a merge commit even when the merge resolves as a fast-forward."
-	echo ""
-	echo "	-m <msg>"
-	echo "		Merge commit message. If it's not specified, then default message will be used."
-	echo ""
-	echo "	<branch>"
-	echo "		Remote branch name."
-	echo ""
-	echo "	<primary>"
-	echo "		Primary repository name."
-	echo ""
-	echo "	<Secondary>"
-	echo "		Secondary repository name."
-	echo ""
-	echo "	-h"
-	echo "		Print help."
-	echo ""
+failure() {
+	if (($# > 0))
+	then
+		echo "$@" 1>&2
+	fi
 
 	exit 1
 }
@@ -39,8 +12,7 @@ usage() {
 args=`getopt -o "m:h" -l "no-ff" -n "git sync" -- "$@"`
 if (($? != 0))
 then
-	echo ""
-	usage
+	failure
 fi
 
 eval set -- "$args"
@@ -62,7 +34,8 @@ while true; do
 			;;
 
 		-h)
-			usage
+			git help sync
+			failure
 			;;
 
 		--)
@@ -71,9 +44,7 @@ while true; do
 			;;
 
 		*)
-			echo "$1 is not an option!"
-			echo ""
-			usage
+			failure "$1 is not an option!"
 			;;
 	esac
 done
@@ -81,8 +52,7 @@ done
 # Check if it's in a git repository.
 if ! git branch > /dev/null 2>&1
 then
-	echo "You are not in a git repository."
-	exit 1
+	failure "You are not in a git repository."
 fi
 
 if (($# == 1))
@@ -92,8 +62,7 @@ then
 
 	if ((${#remotes[@]} != 2))
 	then
-		echo "Number of remote repositories is not 2 (see output of 'git remote')."
-		exit 1
+		failure "Number of remote repositories is not 2 (see output of 'git remote')."
 	fi
 
 	if [ "${remotes[0]}" = "origin" ]
@@ -110,14 +79,13 @@ then
 	primary="$2"
 	secondary="$3"
 else
-	usage
+	failure "Incorrect arguments. Check 'git help sync'."
 fi
 
 # Check if any of them is empty string.
 if [[ -z "$branch" || -z "$primary" || -z "$secondary" ]]
 then
-	echo "<branch>, <primary> and <secondary> could not be empty string."
-	exit 1
+	failure "<branch>, <primary> and <secondary> could not be empty string."
 fi
 
 if [ -z "$msg" ]
@@ -128,8 +96,7 @@ fi
 # Check if current branch has uncommitted changed files.
 if ((`git status -s | wc -l` != 0))
 then
-	echo "Your current branch has uncommitted changed files. Please rollback or commit them first."
-	exit 1
+	failure "Your current branch has uncommitted changed files. Rollback or commit them first."
 fi
 
 old=$(git branch --no-color | awk '{if (NF==2 && $1=="*") print $2}')
@@ -161,8 +128,8 @@ do
 
 		if (($? != 0))
 		then
-			exit 1
-		fi	
+			failure
+		fi
 
 		echo ""
 	fi

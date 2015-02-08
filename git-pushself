@@ -1,33 +1,10 @@
 #!/bin/bash
 
-usage() {
-	echo "NAME"
-	echo "	git-pushself: Push current branch to remote repository"
-	echo ""
-	echo "SYNOPSIS"
-	echo "	git pushself [<repository> | -a | --all] [-n <remote-branch> | --name <remote-branch>]"
-	echo "			[-f | --force] [-v | --verbose]"
-	echo "	git pushself <-h>"
-	echo ""
-	echo "OPTIONS"
-	echo "	<repository>"
-	echo "		Remote repository name. It's 'origin' by default."
-	echo ""
-	echo "	-a, --all"
-	echo "		Push current branch to all repositories."
-	echo ""
-	echo "	-n <remote-branch>, --name <remote-branch>"
-	echo "		Remote branch name, could be different from current branch name."
-	echo ""
-	echo "	-f, --force"
-	echo "		Do a force push."
-	echo ""
-	echo "	-v, --verbose"
-	echo "		Verbose mode."
-	echo ""
-	echo "	-h"
-	echo "		Print help."
-	echo ""
+failure() {
+	if (($# > 0))
+	then
+		echo "$@" 1>&2
+	fi
 
 	exit 1
 }
@@ -35,8 +12,7 @@ usage() {
 args=`getopt -o "n:afvh" -l "name:,all,force,verbose" -n "git pushself" -- "$@"`
 if (($? != 0))
 then
-	echo ""
-	usage
+	failure
 fi
 
 eval set -- "$args"
@@ -51,8 +27,7 @@ while true; do
 			remotename="$2"
 			if [ -z "$remotename" ]
 			then
-				echo "Remote branch name could not be empty string."
-				exit 1
+				failure "Remote branch name could not be empty string."
 			fi
 			shift 2
 			;;
@@ -73,7 +48,8 @@ while true; do
 			;;
 
 		-h)
-			usage
+			git help pushself
+			failure
 			;;
 
 		--)
@@ -82,9 +58,7 @@ while true; do
 			;;
 
 		*)
-			echo "$1 is not an option!"
-			echo ""
-			usage
+			failure "$1 is not an option!"
 			;;
 	esac
 done
@@ -92,8 +66,7 @@ done
 # Check if it's in a git repository.
 if ! git branch > /dev/null 2>&1
 then
-	echo "You are not in a git repository."
-	exit 1
+	failure "You are not in a git repository."
 fi
 
 # Repository name
@@ -113,11 +86,10 @@ then
 	repo="$1"
 	if [ -z "$repo" ]
 	then
-		echo "Repository name could not be empty string."
-		exit 1
+		failure "Repository name could not be empty string."
 	fi
 else
-	usage
+	failure "Incorrect arguments. Check 'git help pushself'."
 fi
 
 
@@ -145,6 +117,12 @@ do
 	if [[ "${DEBUG,,}" != "yes" && "${DEBUG,,}" != "y" ]]
 	then
 		eval "${cmds[$ii]}"
+
+		if (($? != 0))
+		then
+			failure
+		fi
+
 		echo ""
 	fi
 done
