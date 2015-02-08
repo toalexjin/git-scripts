@@ -2,6 +2,7 @@ git-sync(1)
 ===========
 :doctype: manpage
 :man manual: Git Manual
+:page-layout: base
 
 NAME
 ----
@@ -10,13 +11,13 @@ git-sync - Synchronize two remote branches
 SYNOPSIS
 --------
 [verse]
-*git sync* [--no-ff] [-m <msg>] <branch> [<primary> <secondary>]
-*git sync* [--no-ff] [-m <msg>] <primary/branch> <secondary/branch>
+*git sync* ['OPTION'] 'BRANCH' ['PRIMARY' 'SECONDARY']
+*git sync* ['OPTION'] 'PRIMARY/BRANCH' 'SECONDARY/BRANCH'
 
 DESCRIPTION
 -----------
-Synchronize two remote branches by merging them and pushing back
-to remote. If both <primary> and <secondary> are not specified,
+Synchronize two remote branches by merging them and then pushing
+back to remote. If both 'PRIMARY' and 'SECONDARY' are not specified,
 then current remote repositories will be used. If number of remote
 repositories is not 2, then error message will be shown.
 
@@ -25,22 +26,22 @@ OPTIONS
 *--no-ff*::
 	Create a merge commit even when the merge resolves as a fast-forward.
 
-*-m* <msg>::
+*-m 'MESSAGE'*::
 	Merge commit message. If it's not specified, then default message will be used.
 
-<branch>::
+*'BRANCH'*::
 	Remote branch name.
 
-<primary>::
+*'PRIMARY'*::
 	Primary repository name.
 
-<secondary>::
+*'SECONDARY'*::
 	Secondary repository name.
 
-<primary/branch>::
+*'PRIMARY/BRANCH'*::
 	Primary repository name and branch name.
 
-<secondary/branch>::
+*'SECONDARY/BRANCH'*::
 	Secondary repository name and branch name.
 
 EXIT STATUS
@@ -66,5 +67,6 @@ SEE ALSO
 
 AUTHOR
 ------
-Alex Jin
+Alex Jin ('toalexjin@hotmail.com')
+
 

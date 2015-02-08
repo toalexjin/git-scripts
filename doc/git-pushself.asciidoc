@@ -1,0 +1,63 @@
+git-pushself(1)
+===============
+:doctype: manpage
+:man manual: Git Manual
+:page-layout: base
+
+NAME
+----
+git-pushself - Push current branch to remote repository.
+
+SYNOPSIS
+--------
+[verse]
+*git pushself* ['OPTION'] ['REPOSITORY']
+
+DESCRIPTION
+-----------
+Push current branch to remote repository with the same branch name.
+
+OPTIONS
+-------
+*'REPOSITORY'*::
+	Remote repository name. If not specified, then "origin" will be used.
+
+*-a, --all*::
+	Push current branch to all remote repositories.
+
+*-n, --name*::
+	Push to a different remote branch name.
+
+*-f, --force*::
+	Do a force push.
+
+*-v, --verbose*::
+	Verbose mode.
+
+EXIT STATUS
+-----------
+*0*::
+	Success
+
+*Not Zero*::
+	Failure
+
+EXAMPLES
+--------
+
+-----------------
+$ git pushself 
+$ git pushself gitlab
+$ git pushself -an remote-branch-name
+$ git pushself -n remote-branch-name gitlab
+-----------------
+
+SEE ALSO
+--------
+*git-push*[1]
+
+AUTHOR
+------
+Alex Jin ('toalexjin@hotmail.com')
+
+
