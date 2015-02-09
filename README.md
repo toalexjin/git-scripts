@@ -4,7 +4,7 @@ This project offers some git custom scripts.
 
 ### Requirements ###
 
-* `asciidoc` is required to build manpages (`http://asciidoc.org`)
+* `asciidoc` is required to build man pages [(http://asciidoc.org)](http://asciidoc.org)
 
 ### Install ###
 
