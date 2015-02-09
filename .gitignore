@@ -1,4 +1,5 @@
-*.1
+/doc/*.1
+/doc/*.xml
 /doc/*.html
 /doc/*.css
 
