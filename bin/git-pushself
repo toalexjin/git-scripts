@@ -9,7 +9,7 @@ failure() {
 	exit 1
 }
 
-args=`getopt -o "n:afvh" -l "name:,all,force,verbose" -n "git pushself" -- "$@"`
+args=`getopt -o "b:afvh" -l "branch:,all,force,verbose" -n "git pushself" -- "$@"`
 if (($? != 0))
 then
 	failure
@@ -23,7 +23,7 @@ remotename=""
 
 while true; do
 	case "$1" in
-		-n|--name)
+		-b|--branch)
 			remotename="$2"
 			if [ -z "$remotename" ]
 			then

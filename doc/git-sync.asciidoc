@@ -21,6 +21,11 @@ back to remote. If both 'PRIMARY' and 'SECONDARY' are not specified,
 then current remote repositories will be used. If number of remote
 repositories is not 2, then error message will be shown.
 
+Please be aware that a local temporary branch called *sync* will be
+created forcely and destroyed during synchronization. If you already
+have a branch with the same name and depend on it, please be careful
+before using *git sync*.
+
 OPTIONS
 -------
 *--no-ff*::

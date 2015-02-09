@@ -23,9 +23,9 @@ OPTIONS
 	Remote repository name. If not specified, then "origin" will be used.
 
 *-a, --all*::
-	Push current branch to all remote repositories.
+	Push current branch to all remote repositories (see output of *git remote*).
 
-*-n, --name 'BRANCH'*::
+*-b, --branch 'BRANCH'*::
 	Push to a different remote branch name.
 
 *-f, --force*::
