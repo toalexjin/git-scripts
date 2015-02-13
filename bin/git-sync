@@ -9,10 +9,20 @@ failure() {
 	exit 1
 }
 
+no_special_chars() {
+	for ((i=1;i<=$#;i++))
+	do
+		if [ -z "${!i}" -o `expr index "${!i}" $' \t"'` -ne 0 -o `expr index "${!i}" "'"` -ne 0 ]
+		then
+			failure "Input argument \"${!i}\" is empty, or contains whitespace, TAB, \", '. Check 'git help sync'."
+		fi
+	done
+}
+
 args=`getopt -o "m:h" -l "no-ff" -n "git sync" -- "$@"`
 if (($? != 0))
 then
-	failure
+	failure "Check 'git help sync'."
 fi
 
 eval set -- "$args"
@@ -44,7 +54,7 @@ while true; do
 			;;
 
 		*)
-			failure "$1 is not an option!"
+			failure "\"$1\" is not an option!"
 			;;
 	esac
 done
@@ -55,42 +65,82 @@ then
 	failure "You are not in a git repository."
 fi
 
+# Whitespace, TAB, " or ' are not allowed in any arguments.
+no_special_chars "$@"
+
+
 if (($# == 1))
 then
-	branch="$1"
-	remotes=(`git remote`)
+	for ((i=1;i<=$#;i++))
+	do
+		if ((`expr index "${!i}" "/\\\\"` != 0))
+		then
+			failure "Invalid argument \"${!i}\". Check 'git help sync'."
+		fi
+	done
 
+	remotes=(`git remote`)
 	if ((${#remotes[@]} != 2))
 	then
 		failure "Number of remote repositories is not 2 (see output of 'git remote')."
 	fi
 
-	if [ "${remotes[0]}" = "origin" ]
+	if [ "${remotes[0]}" == "origin" ]
 	then
-		primary="${remotes[0]}"
-		secondary="${remotes[1]}"
+		repos=("${remotes[0]}" "${remotes[1]}")
 	else
-		primary="${remotes[1]}"
-		secondary="${remotes[0]}"
+		repos=("${remotes[1]}" "${remotes[0]}")
 	fi
+
+	branches=("$1" "$1")
+elif (($# == 2))
+then
+	repos=()
+	branches=()
+
+	for ((i=1;i<=$#;i++))
+	do
+		if ((`expr index "${!i}" "\\\\"` != 0))
+		then
+			failure "Invalid argument \"${!i}\". Check 'git help sync'."
+		fi
+
+		items=(${!i//\// })
+		if [ "${#items[@]}" -ne 2 -o -z "${items[0]}" -o -z "${items[1]}" ]
+		then
+			failure "Invalid argument \"${!i}\". Check 'git help sync'."
+		fi
+
+		repos+=("${items[0]}")
+		branches+=("${items[1]}")
+	done
 elif (($# == 3))
 then
-	branch="$1"
-	primary="$2"
-	secondary="$3"
+	for ((i=1;i<=$#;i++))
+	do
+		if ((`expr index "${!i}" "/\\\\"` != 0))
+		then
+			failure "Invalid argument \"${!i}\". Check 'git help sync'."
+		fi
+	done
+
+	repos=("$2" "$3")
+	branches=("$1" "$1")
 else
 	failure "Incorrect arguments. Check 'git help sync'."
 fi
 
-# Check if any of them is empty string.
-if [[ -z "$branch" || -z "$primary" || -z "$secondary" ]]
+# Debug purpose
+if [ "${GIT_SCRIPTS_DEBUG,,}" == "yes" -o "${GIT_SCRIPTS_DEBUG,,}" == "y" ]
 then
-	failure "<branch>, <primary> and <secondary> could not be empty string."
+	echo "Repository: ${repos[@]}"
+	echo "Branch: ${branches[@]}"
 fi
+
 
 if [ -z "$msg" ]
 then
-	msg="Merge branch secondary/$branch into primary/$branch"
+	msg="Merge branch ${repos[1]}/${branches[1]} into ${repos[0]}/${branches[0]}."
 fi
 
 # Check if current branch has uncommitted changed files.
@@ -100,20 +150,33 @@ then
 fi
 
 old=$(git branch --no-color | awk '{if (NF==2 && $1=="*") print $2}')
+if [ -z "$old" ]
+then
+	failure "Curent branch name is unknown."
+fi
 
 # Generate a list of commands
+cmds=()
 
 # Accessing the seconary repository is always slow,
 # so we fetch & update secondary repository first.
-cmds=()
-cmds+=("git fetch $secondary $branch")
-cmds+=("git fetch $primary $branch")
-cmds+=("git branch -f --no-track sync $primary/$branch")
+for ((i=${#repos[@]}-1;i>=0;i--))
+do
+	cmds+=("git fetch '${repos[$i]}' '${branches[$i]}'")
+done
+
+cmds+=("git branch -f --no-track sync '${repos[0]}/${branches[0]}'")
 cmds+=("git checkout sync")
-cmds+=("git merge$ff -m '$msg' $secondary/$branch")
-cmds+=("git push $secondary HEAD:$branch")
-cmds+=("git push $primary HEAD:$branch")
-cmds+=("git checkout $old")
+cmds+=("git merge$ff -m '$msg' '${repos[1]}/${branches[1]}'")
+
+# Accessing the seconary repository is always slow,
+# so we fetch & update secondary repository first.
+for ((i=${#repos[@]}-1;i>=0;i--))
+do
+	cmds+=("git push '${repos[$i]}' 'HEAD:${branches[$i]}'")
+done
+
+cmds+=("git checkout '$old'")
 cmds+=("git branch -D sync")
 
 
@@ -122,7 +185,7 @@ for ((ii=0;ii<${#cmds[@]};ii++))
 do
 	echo ">> ${cmds[$ii]}"
 
-	if [[ "${DEBUG,,}" != "yes" && "${DEBUG,,}" != "y" ]]
+	if [ "${GIT_SCRIPTS_DEBUG,,}" != "yes" -a "${GIT_SCRIPTS_DEBUG,,}" != "y" ]
 	then
 		eval "${cmds[$ii]}"
 

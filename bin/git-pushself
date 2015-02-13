@@ -114,7 +114,7 @@ for ((ii=0;ii<${#cmds[@]};ii++))
 do
 	echo ">> ${cmds[$ii]}"
 
-	if [[ "${DEBUG,,}" != "yes" && "${DEBUG,,}" != "y" ]]
+	if [[ "${GIT_SCRIPTS_DEBUG,,}" != "yes" && "${GIT_SCRIPTS_DEBUG,,}" != "y" ]]
 	then
 		eval "${cmds[$ii]}"
 
