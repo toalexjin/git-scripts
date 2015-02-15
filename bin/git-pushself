@@ -1,5 +1,7 @@
 #!/bin/bash
 
+myname="pushself"
+
 failure() {
 	if (($# > 0))
 	then
@@ -9,10 +11,20 @@ failure() {
 	exit 1
 }
 
+no_special_chars() {
+	for ((i=1;i<=$#;i++))
+	do
+		if [ -z "${!i}" -o `expr index "${!i}" $' \t"'` -ne 0 -o `expr index "${!i}" "'"` -ne 0 ]
+		then
+			failure "Input argument \"${!i}\" is empty, or contains whitespace, TAB, \", '. Check 'git help $myname'."
+		fi
+	done
+}
+
 args=`getopt -o "b:afvh" -l "branch:,all,force,verbose" -n "git pushself" -- "$@"`
 if (($? != 0))
 then
-	failure
+	failure "Check 'git help $myname'."
 fi
 
 eval set -- "$args"
@@ -27,7 +39,7 @@ while true; do
 			remotename="$2"
 			if [ -z "$remotename" ]
 			then
-				failure "Remote branch name could not be empty string."
+				failure "Remote branch name could not be empty string. Check 'git help $myname'."
 			fi
 			shift 2
 			;;
@@ -48,7 +60,7 @@ while true; do
 			;;
 
 		-h)
-			git help pushself
+			git help $myname
 			failure
 			;;
 
@@ -58,7 +70,7 @@ while true; do
 			;;
 
 		*)
-			failure "$1 is not an option!"
+			failure "\"$1\" is not an option! Check 'git help $myname'."
 			;;
 	esac
 done
@@ -80,33 +92,36 @@ elif (($# == 1))
 then
 	if [ "$all" = "yes" ]
 	then
-		usage
+		failure "Option '--all' and repository name could not coexist. Check 'git help $myname'."
 	fi
 
+	# Whitespace, TAB, " or ' are not allowed in any arguments.
+	no_special_chars "$@"
+
 	repo="$1"
-	if [ -z "$repo" ]
-	then
-		failure "Repository name could not be empty string."
-	fi
 else
-	failure "Incorrect arguments. Check 'git help pushself'."
+	failure "Incorrect arguments. Check 'git help $myname'."
 fi
 
 
 if [ -z "$remotename" ]
 then
 	remotename=$(git branch --no-color | awk '{if (NF==2 && $1=="*") print $2}')
+	if [ -z "$remotename" ]
+	then
+		failure "Curent branch name is unknown. Check 'git branch --no-color'."
+	fi
 fi
 
 cmds=()
-if [ "$all" = "yes" ]
+if [ "$all" == "yes" ]
 then
 	for ii in `git remote`
 	do
-		cmds+=("git push$options $ii HEAD:$remotename")
+		cmds+=("git push$options '$ii' 'HEAD:$remotename'")
 	done
 else
-	cmds+=("git push$options $repo HEAD:$remotename")
+	cmds+=("git push$options '$repo' 'HEAD:$remotename'")
 fi
 
 
@@ -114,7 +129,7 @@ for ((ii=0;ii<${#cmds[@]};ii++))
 do
 	echo ">> ${cmds[$ii]}"
 
-	if [[ "${GIT_SCRIPTS_DEBUG,,}" != "yes" && "${GIT_SCRIPTS_DEBUG,,}" != "y" ]]
+	if [ "${GIT_SCRIPTS_DEBUG,,}" != "yes" -a "${GIT_SCRIPTS_DEBUG,,}" != "y" ]
 	then
 		eval "${cmds[$ii]}"
 
