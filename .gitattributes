@@ -10,6 +10,7 @@
 *.css text
 *.def text
 *.filters text
+*.go text
 *.h text
 *.hpp text
 *.htm text
