@@ -21,7 +21,22 @@ no_special_chars() {
 	done
 }
 
-args=`getopt -o "b:afvh" -l "branch:,all,force,verbose" -n "git pushself" -- "$@"`
+get_current_branch() {
+	local name=$(git branch --no-color | awk '{if ($1=="*") print $2}')
+
+	if [ -z "$name" ]
+	then
+		failure "Curent branch name is unknown. Check 'git branch --no-color'."
+	fi
+
+	echo -n "$name"
+}
+
+get_all_local_branches() {
+	git branch --no-color | awk '{if ($1=="*") print $2; else print $1;}'
+}
+
+args=`getopt -o "b:safvh" -l "branch:,switch,all,force,verbose" -n "git pushself" -- "$@"`
 if (($? != 0))
 then
 	failure "Check 'git help $myname'."
@@ -32,6 +47,7 @@ eval set -- "$args"
 options=""
 all="no"
 remotename=""
+switch="no"
 
 while true; do
 	case "$1" in
@@ -42,6 +58,11 @@ while true; do
 				failure "Remote branch name could not be empty string. Check 'git help $myname'."
 			fi
 			shift 2
+			;;
+
+		-s|--switch)
+			switch="yes"
+			shift
 			;;
 
 		-a|--all)
@@ -103,14 +124,12 @@ else
 	failure "Incorrect arguments. Check 'git help $myname'."
 fi
 
+# Get current branch name.
+currentname=`get_current_branch`
 
 if [ -z "$remotename" ]
 then
-	remotename=$(git branch --no-color | awk '{if (NF==2 && $1=="*") print $2}')
-	if [ -z "$remotename" ]
-	then
-		failure "Curent branch name is unknown. Check 'git branch --no-color'."
-	fi
+	remotename="$currentname"
 fi
 
 cmds=()
@@ -124,6 +143,37 @@ else
 	cmds+=("git push$options '$repo' 'HEAD:$remotename'")
 fi
 
+# switch flag
+if [ "$switch" == "yes" ]
+then
+	if [ "$currentname" == "master" -o "$currentname" == "develop" ]
+	then
+		failure "Current branch is $currentname, and option -s|--switch could not be used."
+	fi
+
+	switchname=""
+	branches=(`get_all_local_branches`)
+	for ((ii=0;ii<${#branches[@]};ii++))
+	do
+		if [ "${branches[$ii]}" == "master" -o "${branches[$ii]}" == "develop" ]
+		then
+			if [ -z "$switchname" ]
+			then
+				switchname="${branches[$ii]}"
+			else
+				failure "Both branch master and develop exist, and option -s|--switch could not be used."
+			fi
+		fi
+	done
+
+	if [ -z "$switchname" ]
+	then
+		failure "Neither branch master nor develop exist, and option -s|--switch could not be used."
+	fi
+
+	cmds+=("git checkout '$switchname'")
+	cmds+=("git branch -D '$currentname'")
+fi
 
 for ((ii=0;ii<${#cmds[@]};ii++))
 do

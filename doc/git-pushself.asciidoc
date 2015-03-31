@@ -20,13 +20,17 @@ Push current branch to remote repository with the same branch name.
 OPTIONS
 -------
 *'REPOSITORY'*::
-	Remote repository name. If not specified, then "origin" will be used.
+	Remote repository name. If not specified, then *origin* will be used.
 
 *-a, --all*::
 	Push current branch to all remote repositories (see output of *git remote*).
 
 *-b, --branch 'BRANCH'*::
 	Push to a different remote branch name.
+
+*-s, --switch*::
+	After pushing branch, delete current branch and switch to *master* or *develop*.
+	If both *master* and *develop* exist (or neither exists), then an error will be reported.
 
 *-f, --force*::
 	Do a force push.
@@ -50,6 +54,7 @@ $ git pushself
 $ git pushself gitlab
 $ git pushself -an remote-branch-name
 $ git pushself -n remote-branch-name gitlab
+$ git pushself -s
 -----------------
 
 SEE ALSO
