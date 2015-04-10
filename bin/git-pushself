@@ -11,7 +11,7 @@ failure() {
 	exit 1
 }
 
-no_special_chars() {
+check_no_special_chars() {
 	for ((i=1;i<=$#;i++))
 	do
 		if [ -z "${!i}" -o `expr index "${!i}" $' \t"'` -ne 0 -o `expr index "${!i}" "'"` -ne 0 ]
@@ -21,19 +21,19 @@ no_special_chars() {
 	done
 }
 
+# Return: ${get_current_branch_result} (string)
 get_current_branch() {
-	local name=$(git branch --no-color | awk '{if ($1=="*") print $2}')
+	get_current_branch_result=`git branch --no-color | awk '{if ($1=="*") print $2}'`
 
-	if [ -z "$name" ]
+	if [ -z "${get_current_branch_result}" ]
 	then
 		failure "Curent branch name is unknown. Check 'git branch --no-color'."
 	fi
-
-	echo -n "$name"
 }
 
+# Return: ${get_all_local_branches_result} (array)
 get_all_local_branches() {
-	git branch --no-color | awk '{if ($1=="*") print $2; else print $1;}'
+	get_all_local_branches_result=(`git branch --no-color | awk '{if ($1=="*") print $2; else print $1;}'`)
 }
 
 args=`getopt -o "b:safvh" -l "branch:,switch,all,force,verbose" -n "git pushself" -- "$@"`
@@ -117,7 +117,7 @@ then
 	fi
 
 	# Whitespace, TAB, " or ' are not allowed in any arguments.
-	no_special_chars "$@"
+	check_no_special_chars "$@"
 
 	repo="$1"
 else
@@ -125,7 +125,8 @@ else
 fi
 
 # Get current branch name.
-currentname=`get_current_branch`
+get_current_branch
+currentname="${get_current_branch_result}"
 
 if [ -z "$remotename" ]
 then
@@ -152,14 +153,14 @@ then
 	fi
 
 	switchname=""
-	branches=(`get_all_local_branches`)
-	for ((ii=0;ii<${#branches[@]};ii++))
+	get_all_local_branches
+	for ((ii=0;ii<${#get_all_local_branches_result[@]};ii++))
 	do
-		if [ "${branches[$ii]}" == "master" -o "${branches[$ii]}" == "develop" ]
+		if [ "${get_all_local_branches_result[$ii]}" == "master" -o "${get_all_local_branches_result[$ii]}" == "develop" ]
 		then
 			if [ -z "$switchname" ]
 			then
-				switchname="${branches[$ii]}"
+				switchname="${get_all_local_branches_result[$ii]}"
 			else
 				failure "Both branch master and develop exist, and option -s|--switch could not be used."
 			fi

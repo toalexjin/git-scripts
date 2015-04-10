@@ -11,7 +11,7 @@ failure() {
 	exit 1
 }
 
-no_special_chars() {
+check_no_special_chars() {
 	for ((i=1;i<=$#;i++))
 	do
 		if [ -z "${!i}" -o `expr index "${!i}" $' \t"'` -ne 0 -o `expr index "${!i}" "'"` -ne 0 ]
@@ -68,7 +68,7 @@ then
 fi
 
 # Whitespace, TAB, " or ' are not allowed in any arguments.
-no_special_chars "$@"
+check_no_special_chars "$@"
 
 
 if (($# == 1))
