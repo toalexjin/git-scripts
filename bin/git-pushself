@@ -21,19 +21,19 @@ check_illegal_chars() {
 	done
 }
 
-# Return: ${get_current_branch_result} (string)
+# Usage: "get_current_branch <branch_name>"
 get_current_branch() {
-	get_current_branch_result=`git branch --no-color | awk '{if ($1=="*") print $2}'`
+	eval "$1='`git branch --no-color | awk '{if ($1=="*") print $2}'`'"
 
-	if [ -z "${get_current_branch_result}" ]
+	if [ -z "${!1}" ]
 	then
 		failure "Curent branch name is unknown. Check 'git branch --no-color'."
 	fi
 }
 
-# Return: ${get_all_local_branches_result} (array)
+# Usage: "get_all_local_branches <array_name>"
 get_all_local_branches() {
-	get_all_local_branches_result=(`git branch --no-color | awk '{if ($1=="*") print $2; else print $1;}'`)
+	eval "$1=(`git branch --no-color | awk '{if ($1=="*") print $2; else print $1;}'`)"
 }
 
 args=`getopt -o "b:safvh" -l "branch:,switch,all,force,verbose" -n "git pushself" -- "$@"`
@@ -125,8 +125,7 @@ else
 fi
 
 # Get current branch name.
-get_current_branch
-currentname="${get_current_branch_result}"
+get_current_branch currentname
 
 if [ -z "$remotename" ]
 then
@@ -153,14 +152,14 @@ then
 	fi
 
 	switchname=""
-	get_all_local_branches
-	for ((ii=0;ii<${#get_all_local_branches_result[@]};ii++))
+	get_all_local_branches branches
+	for ((ii=0;ii<${#branches[@]};ii++))
 	do
-		if [ "${get_all_local_branches_result[$ii]}" == "master" -o "${get_all_local_branches_result[$ii]}" == "develop" ]
+		if [ "${branches[$ii]}" == "master" -o "${branches[$ii]}" == "develop" ]
 		then
 			if [ -z "$switchname" ]
 			then
-				switchname="${get_all_local_branches_result[$ii]}"
+				switchname="${branches[$ii]}"
 			else
 				failure "Both branch master and develop exist, and option -s|--switch could not be used."
 			fi
