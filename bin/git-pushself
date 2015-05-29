@@ -137,10 +137,20 @@ if [ "$all" == "yes" ]
 then
 	for ii in `git remote`
 	do
-		cmds+=("git push$options '$ii' 'HEAD:$remotename'")
+		if [ "$ii" == "origin" -a "$remotename" == "$currentname" ]
+		then
+			cmds+=("git push$options '$ii' '$remotename'")
+		else
+			cmds+=("git push$options '$ii' 'HEAD:$remotename'")
+		fi
 	done
 else
-	cmds+=("git push$options '$repo' 'HEAD:$remotename'")
+	if [ "$repo" == "origin" -a "$remotename" == "$currentname" ]
+	then
+		cmds+=("git push$options '$repo' '$remotename'")
+	else
+		cmds+=("git push$options '$repo' 'HEAD:$remotename'")
+	fi
 fi
 
 # switch flag
