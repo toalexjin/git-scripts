@@ -154,7 +154,12 @@ fi
 old=$(git branch --no-color | awk '{if (NF==2 && $1=="*") print $2}')
 if [ -z "$old" ]
 then
-	failure "Curent branch name is unknown. Check 'git branch --no-color'."
+	failure "Current branch name is unknown. Check 'git branch --no-color'."
+fi
+
+if [ "$old" == "sync" ]
+then
+	failure "Current branch is 'sync', please switch to another branch and try again."
 fi
 
 # Generate a list of commands
